@@ -62,6 +62,11 @@ async def test_button_hold_detect(dut):
     # --- Test 5: held deasserts when button is released ---
     cocotb.log.info("Test 5: held deasserts when button is released")
     dut.button.value = 0
+    await Timer(1, unit="ns")  # settle combinational logic, still before next clock edge
+    assert int(dut.held.value) == 1, (
+        "held must still be high immediately after button release "
+        "(deasserts at the clock edge, not combinationally)"
+    )
     await step(dut)
     assert int(dut.held.value) == 0, (
         "held must deassert on the cycle after button is released"

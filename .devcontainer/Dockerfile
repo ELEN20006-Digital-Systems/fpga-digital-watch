@@ -35,7 +35,7 @@ ENV PATH="/opt/venv/bin:${PATH}"
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir cocotb==2.0.1 pytest==9.0.3 pytest-html==4.2.0 click==8.3.2
 
-COPY sby/bin /usr/local/bin
+COPY --chmod=0755 sby/bin/sby /usr/local/bin/sby
 COPY sby/share /usr/local/share
 
 ARG TARGETARCH

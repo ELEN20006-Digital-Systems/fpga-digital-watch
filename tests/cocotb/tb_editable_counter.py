@@ -98,6 +98,10 @@ async def test_editable_counter(dut):
     dut.edit_mode.value = 1
     start = int(dut.count.value)
     dut.inc.value = 1
+    await Timer(1, unit="ns")
+    assert int(dut.count.value) == start, (
+        "count must not change combinationally when inc is asserted"
+    )
     for i in range(1, n + 1):
         await step(dut)
         expected = (start + i) % n
@@ -110,6 +114,10 @@ async def test_editable_counter(dut):
     cocotb.log.info("Test 8: edit mode dec counts down each cycle and wraps 0 to N-1")
     start = int(dut.count.value)
     dut.dec.value = 1
+    await Timer(1, unit="ns")
+    assert int(dut.count.value) == start, (
+        "count must not change combinationally when dec is asserted"
+    )
     for i in range(1, n + 1):
         await step(dut)
         expected = (start - i) % n
@@ -123,6 +131,10 @@ async def test_editable_counter(dut):
     held = int(dut.count.value)
     dut.inc.value = 1
     dut.dec.value = 1
+    await Timer(1, unit="ns")
+    assert int(dut.count.value) == held, (
+        "count must not change combinationally when inc and dec are both asserted"
+    )
     for _ in range(5):
         await step(dut)
         assert int(dut.count.value) == held, (

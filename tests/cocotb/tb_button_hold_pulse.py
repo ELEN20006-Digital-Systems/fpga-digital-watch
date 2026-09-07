@@ -97,3 +97,28 @@ async def test_button_hold_pulse(dut):
     assert int(dut.pulse.value) == 0, (
         "pulse must deassert after one cycle on the second hold"
     )
+
+    # --- Test 9: pulse holds high until the next clock edge when button released immediately ---
+    # This guards against a combinational held implementation: if held deasserts the instant
+    # button goes low, pulse vanishes before the arming latch (or any downstream FF) can
+    # capture it at the next clock edge.
+    cocotb.log.info("Test 9: pulse stays high after immediate sub-cycle button release")
+    dut.button.value = 0
+    await step(dut)  # release and let counter reset
+    dut.button.value = 1
+    for _ in range(HOLD_CYCLES - 1):
+        await step(dut)
+    assert int(dut.pulse.value) == 0, "pulse must not fire before threshold"
+    # Cross the threshold edge manually so we can release button in the same clock period.
+    await RisingEdge(dut.clk)
+    await Timer(1, unit="ns")
+    assert int(dut.pulse.value) == 1, "pulse must assert at the threshold edge"
+    dut.button.value = 0  # release immediately — still within the same clock period
+    await Timer(1, unit="ns")
+    assert int(dut.pulse.value) == 1, (
+        "pulse must stay high after immediate button release "
+        "(held is registered, deasserts at the clock edge not combinationally)"
+    )
+    await RisingEdge(dut.clk)
+    await Timer(1, unit="ns")
+    assert int(dut.pulse.value) == 0, "pulse must deassert at the clock edge after button release"

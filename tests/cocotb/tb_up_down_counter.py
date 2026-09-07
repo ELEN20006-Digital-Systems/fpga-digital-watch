@@ -37,6 +37,10 @@ async def test_up_down_counter(dut):
     cocotb.log.info("Test 2: Basic counting up")
     dut.enable.value = 1
     dut.up.value = 1
+    await Timer(1, unit="ns")
+    assert int(dut.count.value) == 0, (
+        "count must not change combinationally when enable is asserted"
+    )
     await tick(dut)
     assert int(dut.count.value) == 1
     await tick(dut)
@@ -53,6 +57,10 @@ async def test_up_down_counter(dut):
     # --- counts down: 0 wraps to MAX ---
     cocotb.log.info(f"Test 4: Count down from 0 wraps to MAX ({MAX})")
     dut.up.value = 0
+    await Timer(1, unit="ns")
+    assert int(dut.count.value) == 0, (
+        "count must not change combinationally when up is deasserted"
+    )
     await tick(dut)
     assert int(dut.count.value) == MAX, f"Down from 0 should wrap to {MAX}"
     await tick(dut)
@@ -79,6 +87,10 @@ async def test_up_down_counter(dut):
     # Count down from MAX to MAX/2
     dut.enable.value = 1
     dut.up.value = 0
+    await Timer(1, unit="ns")
+    assert int(dut.count.value) == MAX, (
+        f"count must not change combinationally when inputs change (expected {MAX})"
+    )
     mid_value = MAX // 2
     steps_to_mid = MAX - mid_value
     for _ in range(steps_to_mid):

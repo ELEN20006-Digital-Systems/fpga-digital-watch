@@ -147,3 +147,38 @@ async def test_top_time_display_v1(dut):
     else:
         assert False, f"1 kHz: seconds did not advance again within {PERIOD + PERIOD // 10} cycles"
     assert cycles == PERIOD, f"1 kHz tick period: expected {PERIOD} cycles, got {cycles}"
+
+
+@cocotb.test()
+async def test_sw_switch_no_spurious_edge(dut):
+    """Switching SW to 2'b11 while CLOCK_50=1 must not advance the counter.
+
+    A common mistake is to wire 'tick' (a combinational mux of CLOCK_50 and
+    rate-generator outputs) directly to hms_counter.clk.  When SW changes from
+    a slow mode (tick=0) to 2'b11 while CLOCK_50 is already HIGH, the mux
+    output transitions 0->1 -- a spurious rising edge that advances the counter
+    before any intended clock cycle.  The fix is to always clock hms_counter
+    from CLOCK_50 and use tick only as the enable.
+
+    This test uses only relative comparisons so it is safe to run after other
+    tests that leave the counter at a non-zero value.
+    """
+    cocotb.start_soon(Clock(dut.CLOCK_50, 20, unit="ns").start())
+    dut.SW.value = 0b00
+    await tick(dut)   # posedge + 1 ns settle; CLOCK_50 is still HIGH after the edge
+
+    snap_before = hex_snapshot(dut)
+    dut.SW.value = 0b11              # switch while CLOCK_50 = 1
+    await Timer(1, unit="ns")        # combinational paths settle; no new clock edge
+
+    assert hex_snapshot(dut) == snap_before, (
+        "HEX outputs changed when SW was switched to 2'b11 while CLOCK_50=1, "
+        "before any additional rising edge -- check the connections to "
+        "hms_counter.clk and hms_counter.enable."
+    )
+
+    # Sanity-check the converse: a real rising edge must advance the counter.
+    await tick(dut)
+    assert hex_snapshot(dut) != snap_before, (
+        "Counter did not advance on a real CLOCK_50 rising edge with SW=2'b11"
+    )
