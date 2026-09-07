@@ -232,6 +232,16 @@ async def test_edit_logic(dut):
         "minutes must decrement by 1 when dec is pressed in minutes edit mode"
     )
 
+    # seconds must still tick while editing minutes
+    cocotb.log.info("Section 8b: seconds continues to tick in minutes edit mode")
+    seconds_before = int(dut.seconds_disp.value)
+    await tick_n(dut, CPS + 5)
+    ticks = (int(dut.seconds_disp.value) - seconds_before) % 60
+    assert ticks >= 1, (
+        f"seconds must advance by at least 1 within CPS+5 cycles while in minutes "
+        f"edit mode; advanced by {ticks}"
+    )
+
     # -----------------------------------------------------------------------
     # Section 9: hours edit - inc and dec adjust hours
     # -----------------------------------------------------------------------
@@ -250,6 +260,16 @@ async def test_edit_logic(dut):
     await tick_n(dut, 3)
     assert int(dut.hours_disp.value) == hours_snap, (
         "hours must decrement by 1 when dec is pressed in hours edit mode"
+    )
+
+    # seconds must still tick while editing hours
+    cocotb.log.info("Section 9b: seconds continues to tick in hours edit mode")
+    seconds_before = int(dut.seconds_disp.value)
+    await tick_n(dut, CPS + 5)
+    ticks = (int(dut.seconds_disp.value) - seconds_before) % 60
+    assert ticks >= 1, (
+        f"seconds must advance by at least 1 within CPS+5 cycles while in hours "
+        f"edit mode; advanced by {ticks}"
     )
 
     # Exit edit mode

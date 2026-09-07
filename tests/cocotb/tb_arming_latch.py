@@ -130,3 +130,30 @@ async def test_arming_latch(dut):
     assert int(dut.armed.value) == 0, (
         "armed must remain low after disarm is released"
     )
+
+    # --- Test 11: disarm is synchronous — mid-cycle assertion must not clear armed ---
+    cocotb.log.info("Test 11: disarm only takes effect on a clock edge")
+    # State: armed=0 (from end of test 10).  Arm the latch first.
+    dut.arm.value = 1
+    await step(dut)
+    dut.arm.value = 0
+    assert int(dut.armed.value) == 1, "armed must be high before test 11"
+
+    # Pulse disarm between clock edges; a synchronous design must ignore it.
+    await Timer(3, unit="ns")   # mid-cycle (clock period is 10 ns)
+    dut.disarm.value = 1
+    await Timer(1, unit="ns")
+    assert int(dut.armed.value) == 1, (
+        "armed cleared when disarm was asserted between clock edges -- "
+        "disarm must only take effect on a rising clock edge "
+        "(check for 'posedge disarm' in the sensitivity list)"
+    )
+    dut.disarm.value = 0
+
+    # Confirm it clears correctly when disarm is held through a clock edge.
+    dut.disarm.value = 1
+    await step(dut)
+    dut.disarm.value = 0
+    assert int(dut.armed.value) == 0, (
+        "armed must clear when disarm is held through a rising clock edge"
+    )

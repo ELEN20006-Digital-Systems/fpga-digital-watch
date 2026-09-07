@@ -65,6 +65,17 @@ def test_user_top_watch_v4_edit_logic(cocotb_runner):
 
 
 @skip
+def test_user_top_watch_v4_cascade_blocked(cocotb_runner):
+    """Carry chain must be suppressed when the upstream counter is in edit mode."""
+    cocotb_runner(
+        top="user_top_watch_v4",
+        sources=SOURCES,
+        test_module="tb_user_top_watch_v3_cascade",
+        parameters={"CYCLES_PER_SECOND": CYCLES_PER_SECOND},
+    )
+
+
+@skip
 def test_divider_reset_on_exit_hours_edit(cocotb_runner):
     """Divider reset: clock divider resets to zero when exiting hours edit."""
     cocotb_runner(

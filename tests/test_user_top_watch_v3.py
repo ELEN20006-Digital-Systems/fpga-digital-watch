@@ -57,6 +57,20 @@ def test_user_top_watch_v3_mode_selection(cocotb_runner):
     not rtl_exists("user_top_watch_v3.sv"),
     reason="user_top_watch_v3 module not implemented yet",
 )
+def test_user_top_watch_v3_cascade_blocked(cocotb_runner):
+    """Carry chain must be suppressed when the upstream counter is in edit mode."""
+    cocotb_runner(
+        top="user_top_watch_v3",
+        sources=SOURCES,
+        test_module="tb_user_top_watch_v3_cascade",
+        parameters={"CYCLES_PER_SECOND": CYCLES_PER_SECOND},
+    )
+
+
+@pytest.mark.skipif(
+    not rtl_exists("user_top_watch_v3.sv"),
+    reason="user_top_watch_v3 module not implemented yet",
+)
 def test_user_top_watch_v3_edit_logic(cocotb_runner):
     """Edit logic: inc/dec buttons adjust the selected counter; auto-repeat fires
     on a sustained press; timekeeping pauses during editing and resumes on exit."""

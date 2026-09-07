@@ -128,27 +128,35 @@ async def test_stopwatch(dut):
 
     # -----------------------------------------------------------------------
     # Section 8: check start button goes through rising edge detector
+    # Holding the button after the first rising edge must not toggle the FSM
+    # again — verified by confirming the display stays frozen for 2 full
+    # centisecond periods while the button remains high.
     # -----------------------------------------------------------------------
     cocotb.log.info("Section 8: rising edge detector used on start")
     dut.button.value = 1
-    await tick(dut)
-    assert int(dut.counter_enable.value) == 0, "timer should have stopped"
-    for _ in range(5):
-        await tick(dut)
-        assert int(dut.counter_enable.value) == 0, "timer should have remained stopped"
+    await tick(dut)  # first rising edge -> stop
+    cs_held = int(dut.seconds_disp.value)
+    await tick_n(dut, 2 * CSTICK)  # hold button for 2 centisecond periods
+    assert int(dut.seconds_disp.value) == cs_held, (
+        "timer must stay stopped while button is held (rising edge detector not working)"
+    )
     dut.button.value = 0
     await tick(dut)
 
     # -----------------------------------------------------------------------
     # Section 9: check lap button goes through rising edge detector
+    # After the first rising edge engages lap hold, the display must remain
+    # frozen for several centisecond periods even though the counter advances.
     # -----------------------------------------------------------------------
-    cocotb.log.info("Section 8: rising edge detector used on lap")
+    cocotb.log.info("Section 9: rising edge detector used on lap")
     await press(dut, 0)  # start
-    assert int(dut.lap_hold.value) == 0, "hold should be off"
-    await press(dut, 1)  # hold on
-    assert int(dut.lap_hold.value) == 1, "hold should be on"
-    for _ in range(5):
-        await tick(dut)
-        assert int(dut.lap_hold.value) == 1, "hold should have remained on"
+    await tick_n(dut, 2 * CSTICK)  # let counter advance
+    lap_display = int(dut.seconds_disp.value)
+    dut.button.value = 2  # hold button[1] high — first rising edge -> lap hold on
+    await tick(dut)
+    await tick_n(dut, 4 * CSTICK)  # counter advances; display must stay frozen
+    assert int(dut.seconds_disp.value) == lap_display, (
+        "display must stay frozen while lap button is held (rising edge detector not working)"
+    )
     dut.button.value = 0
-    await tick(dut)  # hold off
+    await tick(dut)
